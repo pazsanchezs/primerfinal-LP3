@@ -2,37 +2,37 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-// Estructura para pasar argumentos a los hilos
+//estructura para pasar argumentos a los hilos
 typedef struct {
-    int num;
-    int result;
-    int order;
+    int numero; //numero a pasar como argumento
+    int fact; //resultado
+    int order; //orden en que se debe imprimir el resultado
 } thread_arg;
 
-// Variable global para el control de impresión ordenada
-int next_order = 0;
-pthread_mutex_t lock;
-pthread_cond_t cond;
+//para el control de impresion ordenada
+int next_order = 0; //proximo orden esperado
+pthread_mutex_t lock; //para proteger la seccion critica
+pthread_cond_t cond; //para la sincronizacion de la impresion
 
-void* calculate_factorial(void* arg) {
+void* cFactorial(void* arg) {
     thread_arg* t_arg = (thread_arg*)arg;
-    int num = t_arg->num;
-    int result = 1;
+    int numero = t_arg->numero;
+    int fact = 1;
 
-    // Calculo del factorial
-    for (int i = 1; i <= num; ++i) {
-        result *= i;
+    //calculamos el factorial
+    for (int i = 1; i <= numero; ++i) {
+        fact *= i;
     }
 
-    // Guardar el resultado en la estructura
-    t_arg->result = result;
+    //guardamos el resultado
+    t_arg->fact = fact;
 
-    // Sincronización para la impresión ordenada
+    //para asegurar la impresion ordenada
     pthread_mutex_lock(&lock);
     while (t_arg->order != next_order) {
         pthread_cond_wait(&cond, &lock);
     }
-    printf("Factorial de %d: %d\n", num, result);
+    printf("Factorial de %d: %d\n", numero, fact);
     next_order++;
     pthread_cond_broadcast(&cond);
     pthread_mutex_unlock(&lock);
@@ -41,32 +41,32 @@ void* calculate_factorial(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Uso: %s num1 num2 ... numN\n", argv[0]);
+    if (argc < 2) { //verificamos los argumentos
+        fprintf(stderr, "Uso: %s numero1 numero2 ... numeroN\n", argv[0]);
         return 1;
     }
 
-    int num_args = argc - 1;
+    int num_args = argc - 1; //numero de argumentos que pasamos
     pthread_t threads[num_args];
     thread_arg t_args[num_args];
 
-    // Inicializar mutex y condicional
+    //inicializar mutex y condicional
     pthread_mutex_init(&lock, NULL);
     pthread_cond_init(&cond, NULL);
 
-    // Crear hilos y pasar argumentos
+    //para crear los hilos y pasar argumentos
     for (int i = 0; i < num_args; ++i) {
-        t_args[i].num = atoi(argv[i + 1]);
+        t_args[i].numero = atoi(argv[i + 1]);
         t_args[i].order = i;
-        pthread_create(&threads[i], NULL, calculate_factorial, &t_args[i]);
+        pthread_create(&threads[i], NULL, cFactorial, &t_args[i]);
     }
 
-    // Esperar a que todos los hilos terminen
+    //esperar a que todos los hilos terminen
     for (int i = 0; i < num_args; ++i) {
         pthread_join(threads[i], NULL);
     }
 
-    // Destruir mutex y condicional
+    //destruir mutex y condicional
     pthread_mutex_destroy(&lock);
     pthread_cond_destroy(&cond);
 
