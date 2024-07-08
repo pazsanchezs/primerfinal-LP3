@@ -1,4 +1,5 @@
 Tp- Final Lp3 
+
 Tema 1: 
 gcc -o ejercicio1 ejercicio1.c -lpthread
 
